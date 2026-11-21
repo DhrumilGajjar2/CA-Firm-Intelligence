@@ -1,0 +1,81 @@
+# ───────── dependencies ─────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+.pnpm-store/
+
+# ───────── build output ─────────
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# ───────── generated code ─────────
+# Prisma client, created by `prisma generate` (runs on npm install)
+apps/api/src/generated/
+
+# ───────── secrets & environment (never commit) ─────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# ───────── data & uploads (may contain real client information) ─────────
+# Imported CSV/XLSX files and local file storage must never be committed (PRD section 19).
+uploads/
+storage/
+*.dump
+*.backup
+pgdata/
+# Local sample/real data files at the repo root or app roots. Seed data lives in prisma/seed.ts.
+/*.csv
+/*.xlsx
+/*.xls
+apps/*/*.csv
+apps/*/*.xlsx
+apps/*/*.xls
+
+# ───────── logs ─────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ───────── testing & tooling caches ─────────
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+.eslintcache
+.prettiercache
+.vitest/
+
+# ───────── editors & OS ─────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ───────── local AI-assistant files ─────────
+.claude/settings.local.json
+.agents/
+.windsurf/
+.cursor/
+skills-lock.json
+
+# ───────── misc ─────────
+.vercel/

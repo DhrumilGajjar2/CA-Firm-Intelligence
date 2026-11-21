@@ -1,0 +1,457 @@
+// CA Firm Intelligence — database schema (PRD v1.0 §8).
+//
+// Conventions (agreed P0 decision — see docs/DATABASE_SCHEMA.md):
+//  - Model fields are snake_case, so DB columns, Prisma fields and API JSON all match (PRD §14 examples).
+//  - Tables are plural snake_case via @@map.
+//  - UUID primary keys; every firm-owned record carries firm_id (tenant isolation).
+//  - Money is Decimal(14,2); timestamps are UTC (timestamptz); pure calendar dates use @db.Date.
+//  - Uniqueness is scoped per firm, e.g. (firm_id, client_code).
+//  - Archive instead of delete where history matters (archived_at).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum UserRole {
+  owner
+  manager
+  employee
+  viewer
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  revoked
+  expired
+}
+
+enum ClientType {
+  individual
+  company
+  partnership
+  llp
+  huf
+  trust
+  other
+}
+
+enum EngagementStatus {
+  not_started
+  in_progress
+  under_review
+  completed
+  on_hold
+  cancelled
+}
+
+enum EngagementPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+// Paid / partially-paid / overdue are DERIVED from allocations and due_date, never stored.
+enum InvoiceStatus {
+  draft
+  issued
+  void
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  upi
+  cheque
+  card
+  other
+}
+
+enum ImportType {
+  clients
+}
+
+enum ImportStatus {
+  uploaded
+  mapped
+  previewed
+  processing
+  completed
+  failed
+  cancelled
+}
+
+enum ImportRowStatus {
+  pending
+  valid
+  invalid
+  duplicate
+  imported
+  skipped
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  cancelled
+}
+
+// ───────────────────── Firms, users, membership ─────────────────────
+
+model Firm {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  address    String?
+  email      String?
+  phone      String?
+  timezone   String   @default("Asia/Kolkata")
+  settings   Json     @default("{}")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  members      FirmMember[]
+  invitations  Invitation[]
+  clients      Client[]
+  services     Service[]
+  engagements  Engagement[]
+  work_logs    WorkLog[]
+  invoices     Invoice[]
+  payments     Payment[]
+  allocations  PaymentAllocation[]
+  import_jobs  ImportJob[]
+  import_rows  ImportRow[]
+  audit_logs   AuditLog[]
+  subscription Subscription?
+
+  @@map("firms")
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  password_hash String
+  name          String
+  last_login_at DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @updatedAt @db.Timestamptz(6)
+
+  memberships           FirmMember[]
+  invitations_sent      Invitation[]
+  assigned_engagements  Engagement[]         @relation("EngagementAssignee")
+  created_engagements   Engagement[]         @relation("EngagementCreator")
+  work_logs             WorkLog[]
+  import_jobs           ImportJob[]
+  audit_logs            AuditLog[]
+  password_reset_tokens PasswordResetToken[]
+
+  @@map("users")
+}
+
+// Not in the PRD §8 table list, but required by FR-01 (password reset). Only the token HASH is stored.
+model PasswordResetToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique
+  expires_at DateTime  @db.Timestamptz(6)
+  used_at    DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("password_reset_tokens")
+}
+
+model FirmMember {
+  id         String   @id @default(uuid()) @db.Uuid
+  firm_id    String   @db.Uuid
+  user_id    String   @db.Uuid
+  role       UserRole
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  firm Firm @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([firm_id, user_id])
+  @@index([user_id])
+  @@map("firm_members")
+}
+
+model Invitation {
+  id            String           @id @default(uuid()) @db.Uuid
+  firm_id       String           @db.Uuid
+  email         String
+  role          UserRole
+  token_hash    String           @unique
+  status        InvitationStatus @default(pending)
+  invited_by_id String           @db.Uuid
+  expires_at    DateTime         @db.Timestamptz(6)
+  accepted_at   DateTime?        @db.Timestamptz(6)
+  created_at    DateTime         @default(now()) @db.Timestamptz(6)
+
+  firm       Firm @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  invited_by User @relation(fields: [invited_by_id], references: [id])
+
+  @@index([firm_id, email])
+  @@index([firm_id, status])
+  @@map("invitations")
+}
+
+// ───────────────────── Clients, services, engagements ─────────────────────
+
+model Client {
+  id           String     @id @default(uuid()) @db.Uuid
+  firm_id      String     @db.Uuid
+  client_code  String
+  display_name String
+  client_type  ClientType
+  email        String?
+  phone        String?
+  address      String?
+  notes        String?
+  archived_at  DateTime?  @db.Timestamptz(6)
+  created_at   DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime   @updatedAt @db.Timestamptz(6)
+
+  firm        Firm         @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  engagements Engagement[]
+  invoices    Invoice[]
+  payments    Payment[]
+
+  @@unique([firm_id, client_code])
+  @@index([firm_id, display_name])
+  @@index([firm_id, archived_at])
+  @@map("clients")
+}
+
+model Service {
+  id          String    @id @default(uuid()) @db.Uuid
+  firm_id     String    @db.Uuid
+  name        String
+  description String?
+  archived_at DateTime? @db.Timestamptz(6)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @updatedAt @db.Timestamptz(6)
+
+  firm        Firm         @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  engagements Engagement[]
+
+  @@unique([firm_id, name])
+  @@map("services")
+}
+
+model Engagement {
+  id             String             @id @default(uuid()) @db.Uuid
+  firm_id        String             @db.Uuid
+  client_id      String             @db.Uuid
+  service_id     String             @db.Uuid
+  assigned_to_id String?            @db.Uuid
+  created_by_id  String             @db.Uuid
+  title          String?
+  status         EngagementStatus   @default(not_started)
+  priority       EngagementPriority @default(medium)
+  start_date     DateTime?          @db.Date
+  due_date       DateTime           @db.Date
+  completed_at   DateTime?          @db.Timestamptz(6)
+  notes          String?
+  created_at     DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime           @updatedAt @db.Timestamptz(6)
+
+  firm        Firm      @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  client      Client    @relation(fields: [client_id], references: [id])
+  service     Service   @relation(fields: [service_id], references: [id])
+  assigned_to User?     @relation("EngagementAssignee", fields: [assigned_to_id], references: [id])
+  created_by  User      @relation("EngagementCreator", fields: [created_by_id], references: [id])
+  work_logs   WorkLog[]
+  invoices    Invoice[]
+
+  @@index([firm_id, status])
+  @@index([firm_id, due_date])
+  @@index([firm_id, assigned_to_id])
+  @@index([client_id])
+  @@index([service_id])
+  @@map("engagements")
+}
+
+model WorkLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  firm_id       String   @db.Uuid
+  engagement_id String   @db.Uuid
+  user_id       String   @db.Uuid
+  work_date     DateTime @db.Date
+  hours         Decimal  @db.Decimal(5, 2)
+  description   String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  firm       Firm       @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  engagement Engagement @relation(fields: [engagement_id], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [user_id], references: [id])
+
+  @@index([firm_id, user_id, work_date])
+  @@index([engagement_id])
+  @@map("work_logs")
+}
+
+// ───────────────────── Fee tracking (operational, not a ledger) ─────────────────────
+
+model Invoice {
+  id             String        @id @default(uuid()) @db.Uuid
+  firm_id        String        @db.Uuid
+  client_id      String        @db.Uuid
+  engagement_id  String?       @db.Uuid
+  invoice_number String
+  invoice_date   DateTime      @db.Date
+  due_date       DateTime      @db.Date
+  amount         Decimal       @db.Decimal(14, 2)
+  status         InvoiceStatus @default(issued)
+  notes          String?
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @updatedAt @db.Timestamptz(6)
+
+  firm        Firm                @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  client      Client              @relation(fields: [client_id], references: [id])
+  engagement  Engagement?         @relation(fields: [engagement_id], references: [id])
+  allocations PaymentAllocation[]
+
+  @@unique([firm_id, invoice_number])
+  @@index([firm_id, client_id])
+  @@index([firm_id, due_date])
+  @@index([firm_id, status])
+  @@map("invoices")
+}
+
+model Payment {
+  id           String        @id @default(uuid()) @db.Uuid
+  firm_id      String        @db.Uuid
+  client_id    String        @db.Uuid
+  amount       Decimal       @db.Decimal(14, 2)
+  payment_date DateTime      @db.Date
+  method       PaymentMethod @default(bank_transfer)
+  reference    String?
+  notes        String?
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+
+  firm        Firm                @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  client      Client              @relation(fields: [client_id], references: [id])
+  allocations PaymentAllocation[]
+
+  @@index([firm_id, client_id])
+  @@index([firm_id, payment_date])
+  @@map("payments")
+}
+
+model PaymentAllocation {
+  id         String   @id @default(uuid()) @db.Uuid
+  firm_id    String   @db.Uuid
+  payment_id String   @db.Uuid
+  invoice_id String   @db.Uuid
+  amount     Decimal  @db.Decimal(14, 2)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  firm    Firm    @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  payment Payment @relation(fields: [payment_id], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoice_id], references: [id])
+
+  @@unique([payment_id, invoice_id])
+  @@index([invoice_id])
+  @@index([firm_id])
+  @@map("payment_allocations")
+}
+
+// ───────────────────── Imports ─────────────────────
+
+model ImportJob {
+  id                String       @id @default(uuid()) @db.Uuid
+  firm_id           String       @db.Uuid
+  uploaded_by_id    String       @db.Uuid
+  import_type       ImportType   @default(clients)
+  original_filename String
+  storage_key       String
+  file_size_bytes   Int
+  status            ImportStatus @default(uploaded)
+  column_mapping    Json?
+  total_rows        Int          @default(0)
+  valid_rows        Int          @default(0)
+  invalid_rows      Int          @default(0)
+  duplicate_rows    Int          @default(0)
+  imported_rows     Int          @default(0)
+  error_message     String?
+  created_at        DateTime     @default(now()) @db.Timestamptz(6)
+  completed_at      DateTime?    @db.Timestamptz(6)
+
+  firm        Firm        @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  uploaded_by User        @relation(fields: [uploaded_by_id], references: [id])
+  rows        ImportRow[]
+
+  @@index([firm_id, created_at])
+  @@index([firm_id, status])
+  @@map("import_jobs")
+}
+
+model ImportRow {
+  id            String          @id @default(uuid()) @db.Uuid
+  firm_id       String          @db.Uuid
+  import_job_id String          @db.Uuid
+  row_number    Int
+  raw_data      Json
+  status        ImportRowStatus @default(pending)
+  errors        Json?
+  created_at    DateTime        @default(now()) @db.Timestamptz(6)
+
+  firm       Firm      @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  import_job ImportJob @relation(fields: [import_job_id], references: [id], onDelete: Cascade)
+
+  @@unique([import_job_id, row_number])
+  @@index([import_job_id, status])
+  @@index([firm_id])
+  @@map("import_rows")
+}
+
+// ───────────────────── Audit & billing ─────────────────────
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  firm_id     String?  @db.Uuid
+  user_id     String?  @db.Uuid
+  action      String
+  entity_type String?
+  entity_id   String?
+  metadata    Json?
+  ip_address  String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  firm Firm? @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([firm_id, created_at])
+  @@index([firm_id, action])
+  @@index([user_id])
+  @@map("audit_logs")
+}
+
+model Subscription {
+  id                       String             @id @default(uuid()) @db.Uuid
+  firm_id                  String             @unique @db.Uuid
+  plan                     String             @default("trial")
+  status                   SubscriptionStatus @default(trialing)
+  current_period_end       DateTime?          @db.Timestamptz(6)
+  provider_customer_id     String?
+  provider_subscription_id String?
+  created_at               DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime           @updatedAt @db.Timestamptz(6)
+
+  firm Firm @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}

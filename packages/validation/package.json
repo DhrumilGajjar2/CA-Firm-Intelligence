@@ -1,0 +1,12 @@
+{
+  "name": "@ca-firm/validation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@ca-firm/shared-types": "*",
+    "zod": "^4.0.0"
+  }
+}

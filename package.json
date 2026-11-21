@@ -1,0 +1,37 @@
+{
+  "name": "ca-firm-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Operations & business intelligence SaaS for Indian Chartered Accountant firms",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @ca-firm/web",
+    "dev:api": "npm run dev --workspace @ca-firm/api",
+    "build:web": "npm run build --workspace @ca-firm/web",
+    "build:api": "npm run build --workspace @ca-firm/api",
+    "lint:web": "npm run lint --workspace @ca-firm/web",
+    "typecheck:web": "npm run typecheck --workspace @ca-firm/web",
+    "typecheck:api": "npm run typecheck --workspace @ca-firm/api",
+    "typecheck": "npm run typecheck:web && npm run typecheck:api",
+    "test:api": "npm run test --workspace @ca-firm/api",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate:dev --workspace @ca-firm/api",
+    "db:seed": "npm run db:seed --workspace @ca-firm/api",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.8"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "overrides": {
+    "effect": "^3.22.5"
+  }
+}
