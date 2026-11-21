@@ -5,9 +5,9 @@ Operations & business-intelligence SaaS for Indian Chartered Accountant firms (P
 | Area               | Owner   | Location     |
 | ------------------ | ------- | ------------ |
 | Frontend (Next.js) | Dhrumil | `apps/web`   |
-| Backend (Fastify)  | Sampat  | `apps/api`   |
-| Shared contracts   | Both    | `packages/*` |
-| Docs               | Both    | `docs/`      |
+| Backend (Fastify)  | Dhrumil | `apps/api`   |
+| Shared contracts   | Dhrumil | `packages/*` |
+| Docs               | Dhrumil | `docs/`      |
 
 ## Getting started
 
@@ -43,7 +43,7 @@ npm run dev:web       # http://localhost:3000
 - `@ca-firm/validation`: Zod schemas used by forms and the API
 - `@ca-firm/api-contracts`: endpoint paths from PRD section 9
 
-Changing a shared package is a contract change: get the other developer's review (PRD sections 13-14).
+Changing a shared package is a contract change: update frontend and backend together and keep `docs/API_SPECIFICATION.md` in sync (PRD sections 13-14).
 
 ## Docs
 

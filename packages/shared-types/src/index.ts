@@ -1,7 +1,7 @@
 /**
- * Shared contracts between apps/web (Dhrumil) and apps/api (Sampat).
+ * Shared contracts between apps/web and apps/api (both owned by Dhrumil).
  * Source: PRD v1.0 §3 (roles), §4 FR-06 (engagement statuses), §9.1 (API response).
- * Any change here is a contract change: review it with the other developer.
+ * Any change here is a contract change: update both sides and docs/API_SPECIFICATION.md together.
  */
 
 // ---------- Standard API response (PRD §9.1) ----------

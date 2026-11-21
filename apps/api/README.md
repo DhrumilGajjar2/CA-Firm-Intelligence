@@ -1,6 +1,6 @@
 # apps/api: Fastify REST API
 
-Owner: **Sampat** (backend). Folder layout follows PRD section 7 and is a modular monolith.
+Owner: **Dhrumil** (backend role). Folder layout follows PRD section 7 and is a modular monolith.
 
 | Path                              | Purpose                                                                                                |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------ |

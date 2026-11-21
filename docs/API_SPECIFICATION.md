@@ -51,6 +51,9 @@ Base URL: `/api/v1` (dev: `http://localhost:5000/api/v1`). Live OpenAPI docs: `h
 
 ## Endpoint status
 
+Statuses: `Planned` (in the PRD, not yet specified) -> `Contract agreed` (fully specified here and in the shared packages; the
+frontend may build against it with mocks) -> `Done` (implemented **and** tested; the frontend may call it for real).
+
 | Area                          | Endpoints (PRD section 9)                                                                                                  | Phase | Status   |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----- | -------- |
 | System                        | `GET /health`                                                                                                              | P0    | **Done** |
