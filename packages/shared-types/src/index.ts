@@ -81,6 +81,8 @@ export interface Firm {
   id: string;
   name: string;
   timezone: string;
+  /** Derived from firm settings; false until the owner finishes onboarding. */
+  onboarding_completed: boolean;
 }
 
 export interface CurrentUser {
@@ -89,4 +91,64 @@ export interface CurrentUser {
   email: string;
   role: UserRole;
   firm: Firm;
+}
+
+// ---------- Firms (P1) ----------
+
+export interface FirmProfile {
+  id: string;
+  name: string;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+  timezone: string;
+  created_at: string;
+}
+
+export interface FirmSettings {
+  /** 1-12; Indian financial year starts in April. */
+  financial_year_start_month: number;
+  onboarding_completed: boolean;
+}
+
+// ---------- Users and invitations (P1) ----------
+
+export const USER_STATUS_FILTERS = ["active", "inactive"] as const;
+export type UserStatusFilter = (typeof USER_STATUS_FILTERS)[number];
+
+/** A member of the current firm (user + membership). `id` is the user id. */
+export interface FirmUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+}
+
+export const INVITATION_STATUSES = ["pending", "accepted", "revoked", "expired"] as const;
+export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: UserRole;
+  status: InvitationStatus;
+  expires_at: string;
+  created_at: string;
+  invited_by: { id: string; name: string };
+}
+
+/** Returned once, by POST /users/invite. The raw token is never stored or returned again. */
+export interface CreatedInvitation extends Invitation {
+  invite_url: string;
+}
+
+/** Public preview used by the accept-invitation page. */
+export interface InvitationPreview {
+  email: string;
+  role: UserRole;
+  firm_name: string;
+  expires_at: string;
 }

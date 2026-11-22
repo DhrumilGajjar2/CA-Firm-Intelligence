@@ -17,6 +17,10 @@ export const endpoints = {
     me: "/auth/me",
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
+    /** P1 addition (FR-03 "accept invitations"; not in PRD section 9). Public. */
+    invitationByToken: (token: string) =>
+      `/auth/invitations/${encodeURIComponent(token)}`,
+    acceptInvitation: "/auth/accept-invitation",
   },
   firms: {
     current: "/firms/current",
@@ -28,6 +32,11 @@ export const endpoints = {
     byId: (id: string) => `/users/${id}`,
     role: (id: string) => `/users/${id}/role`,
     status: (id: string) => `/users/${id}/status`,
+  },
+  /** P1 addition (FR-03 invitation management; not in PRD section 9). */
+  invitations: {
+    list: "/invitations",
+    byId: (id: string) => `/invitations/${id}`,
   },
   clients: {
     list: "/clients",
