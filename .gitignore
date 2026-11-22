@@ -70,8 +70,20 @@ blob-report/
 Thumbs.db
 desktop.ini
 
+# ───────── temp files and caches ─────────
+tmp/
+.tmp/
+*.tmp
+*.orig
+*.rej
+*.pid
+.cache/
+.swc/
+
 # ───────── local AI-assistant files ─────────
 .claude/settings.local.json
+.claude/worktrees/
+.claude/scheduled_tasks*
 .agents/
 .windsurf/
 .cursor/
