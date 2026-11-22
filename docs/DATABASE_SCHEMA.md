@@ -47,3 +47,11 @@ npm run db:seed      # sample data only (never real client data)
 ```
 
 Schema changes always go through a migration. Do not edit an applied migration.
+
+## Invitation rules (P1, no migration)
+
+`invitations.token_hash` (SHA-256 of a 32-byte base64url token) is unique; the raw token is never stored. `status` is `pending`, `accepted`,
+`revoked` or `expired`; a `pending` row past `expires_at` is reported as `expired`, and is marked `expired` when the same email is invited again.
+"One pending invitation per (firm, email)" is enforced in the invite transaction, which locks the firm row (`SELECT ... FOR UPDATE`), rather than
+by a partial unique index, so no schema migration was needed. Accepting locks the invitation row and creates the `users` row, the `firm_members`
+row (invited role, never `owner`) and sets `accepted_at` in one transaction.

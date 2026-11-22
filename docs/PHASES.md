@@ -7,7 +7,7 @@ below when a phase's exit criteria are verified. A phase starts only after the p
 | Phase | Focus                                  | Status                                 |
 | ----- | -------------------------------------- | -------------------------------------- |
 | P0    | Planning, discovery and foundation     | Done (a few shared items open, see P0) |
-| P1    | Authentication, firm setup, users      | Open                                   |
+| P1    | Authentication, firm setup, users      | Done (2026-11-22, see P1; uncommitted) |
 | P2    | Core business modules and data import  | Open                                   |
 | P3    | Finance, dashboard and analytics       | Open                                   |
 | P4    | Reporting, security, QA, pilot release | Open                                   |
@@ -68,6 +68,19 @@ APIs; role management; RBAC middleware; tenant isolation; authentication tests.
 
 **Exit criteria:** users register and log in; a firm is created during onboarding; owners invite employees; roles are
 enforced; users cannot access another firm's information; authentication and authorization tests pass.
+
+**Done (2026-11-22):** all six exit criteria verified with evidence (details, test names and the live status-code run in
+`docs/QA_TEST_PLAN.md`, "P1 exit verdict"). Final tree checks: `typecheck`, `lint:web`, `build:web`, `build:api` clean; API tests
+786/786 (real PostgreSQL test database); web tests 679/679. Bugs P1-001 to P1-010 are all closed; no bug is open. Added beyond
+the PRD API list (flagged in `API_SPECIFICATION.md`): `GET /auth/invitations/:token`, `POST /auth/accept-invitation`, `GET /invitations`,
+`DELETE /invitations/:id`.
+
+**Not verified (needs a real browser or later phases):** visual/responsive/keyboard/screen-reader checks; real cross-origin cookie
+behaviour and the `Secure` flag over HTTPS; real Next.js navigation and clipboard; email delivery (invitation and reset links are
+only logged in non-production, email is P5); login/forgot-password rate limiting (P4); audit-log rows (P4); sessions issued before a password
+reset stay valid until their 8 h expiry (stateless JWT, parked); the shared packages ship TypeScript source and must be compiled or bundled
+before a Node 20 production deploy (P4 deployment work). The work is **not committed**: it sits uncommitted on branch `PH-1.0.0`; the
+`develop` branch still does not exist (P0 shared item).
 
 ---
 

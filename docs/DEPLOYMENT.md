@@ -19,6 +19,29 @@ npm run dev:web                               # http://localhost:3000
 
 Without Docker, point `DATABASE_URL` in `apps/api/.env` at any PostgreSQL instance.
 
+### Test database (backend tests)
+
+DB-backed API tests (auth, and later tenant isolation and RBAC) run against a **dedicated PostgreSQL database**, never the dev one.
+
+```bash
+# one-time: create it (use your own PostgreSQL credentials)
+psql -U postgres -c 'CREATE DATABASE "CA_INTELLIGENCE_PORTAL_TEST"'
+# add to apps/api/.env (see .env.example); the database name MUST contain "test"
+TEST_DATABASE_URL=postgresql://<user>:<password>@localhost:5432/CA_INTELLIGENCE_PORTAL_TEST?schema=public
+
+npm run test:api        # applies migrations to the test DB automatically (prisma migrate deploy), then runs the suite
+```
+
+Test helpers (`apps/api/tests/db-helpers.ts`): `makeTestApp()`, `registerOwner()`, `createMember()`, `loginCookie()` and `resetDb()`,
+which truncates all tables between tests and refuses to run unless the connected database name contains `test`.
+If `TEST_DATABASE_URL` is unset, DB-backed tests are skipped with a warning.
+
+### Demo data
+
+`npm run db:seed` (development only; refuses `NODE_ENV=production`) adds the "Demo CA Associates" firm with four fake users:
+`owner@example.com`, `manager@example.com`, `employee@example.com`, `viewer@example.com`, all with the fake dev password `Demo-pass-123`.
+In development the "forgot password" link is printed to the API log instead of being emailed (never in production).
+
 ### Verify the setup (P0 exit criteria)
 
 - `http://localhost:5000/api/v1/health` returns `"database": "up"`.
