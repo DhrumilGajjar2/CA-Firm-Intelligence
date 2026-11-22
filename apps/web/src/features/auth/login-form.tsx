@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { loginSchema, type LoginInput } from "@ca-firm/validation";
+import { FormErrorAlert } from "@/components/forms/form-error-alert";
+import { FormField, fieldProps } from "@/components/forms/form-field";
+import { PasswordInput } from "@/components/forms/password-input";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,25 +19,32 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { applyServerErrors } from "@/lib/form-errors";
 import { authService } from "@/services/auth.service";
-import { currentUserQueryKey } from "./use-current-user";
+import { currentUserQueryKey, authFormMutationMeta } from "./use-current-user";
+import { useNextPath } from "./use-next-path";
 
 export function LoginForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const nextPath = useNextPath();
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
   const login = useMutation({
+    meta: authFormMutationMeta,
     mutationFn: authService.login,
     onSuccess: (user) => {
       queryClient.setQueryData(currentUserQueryKey, user);
-      router.push("/dashboard");
+      router.replace(nextPath);
     },
+    onError: (error) =>
+      setFormError(applyServerErrors(error, setError, ["email", "password"])),
   });
 
   return (
@@ -44,53 +55,43 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <form
-          onSubmit={handleSubmit((values) => login.mutate(values))}
+          onSubmit={handleSubmit((values) => {
+            setFormError(null);
+            login.mutate(values);
+          })}
           className="flex flex-col gap-4"
           noValidate
+          aria-label="Sign in"
         >
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
+          <FormField id="email" label="Email" error={errors.email?.message}>
             <Input
-              id="email"
+              {...fieldProps("email", errors.email?.message)}
               type="email"
               autoComplete="email"
-              aria-invalid={!!errors.email}
               {...register("email")}
             />
-            {errors.email ? (
-              <p className="text-destructive text-xs">{errors.email.message}</p>
-            ) : null}
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
+          </FormField>
+          <FormField
+            id="password"
+            label="Password"
+            error={errors.password?.message}
+            labelAside={
               <Link
                 href="/forgot-password"
                 className="text-primary text-xs hover:underline"
               >
                 Forgot password?
               </Link>
-            </div>
-            <Input
-              id="password"
-              type="password"
+            }
+          >
+            <PasswordInput
+              {...fieldProps("password", errors.password?.message)}
               autoComplete="current-password"
-              aria-invalid={!!errors.password}
               {...register("password")}
             />
-            {errors.password ? (
-              <p className="text-destructive text-xs">{errors.password.message}</p>
-            ) : null}
-          </div>
+          </FormField>
 
-          {login.isError ? (
-            <p
-              role="alert"
-              className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
-            >
-              {login.error.message}
-            </p>
-          ) : null}
+          <FormErrorAlert message={formError} />
 
           <Button type="submit" disabled={login.isPending}>
             {login.isPending ? "Signing in…" : "Sign in"}

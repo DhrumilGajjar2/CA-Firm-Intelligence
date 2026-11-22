@@ -45,8 +45,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings, roles: ["owner"] },
 ];
 
+/** Items visible to a role. No role (not loaded / signed out) shows nothing, never everything. */
 export function navItemsForRole(role: UserRole | undefined): readonly NavItem[] {
-  // Role unknown (not loaded / backend offline during P0): show everything so the shell is browsable.
-  if (!role) return NAV_ITEMS;
+  if (!role) return [];
   return NAV_ITEMS.filter((item) => item.roles.includes(role));
 }

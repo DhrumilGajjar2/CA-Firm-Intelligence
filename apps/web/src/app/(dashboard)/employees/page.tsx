@@ -1,16 +1,8 @@
 import type { Metadata } from "next";
-import { UserCog } from "lucide-react";
-import { ModulePlaceholder } from "@/components/layout/module-placeholder";
+import { TeamView } from "@/features/users/team-view";
 
-export const metadata: Metadata = { title: "Employees" };
+export const metadata: Metadata = { title: "Team" };
 
 export default function EmployeesPage() {
-  return (
-    <ModulePlaceholder
-      title="Employees"
-      description="View team members, roles and workload."
-      icon={UserCog}
-      phase="P1"
-    />
-  );
+  return <TeamView />;
 }

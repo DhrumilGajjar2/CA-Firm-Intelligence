@@ -3,12 +3,29 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "cn";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentUser } from "@/features/auth/use-current-user";
 import { navItemsForRole } from "@/lib/navigation";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { data: user } = useCurrentUser();
+  const { data: user, isPending } = useCurrentUser();
+
+  // Never show items before the real role is known.
+  if (isPending) {
+    return (
+      <div
+        role="status"
+        aria-label="Loading navigation"
+        className="flex flex-col gap-2 px-3"
+      >
+        {Array.from({ length: 5 }, (_, i) => (
+          <Skeleton key={i} className="h-9 w-full" />
+        ))}
+      </div>
+    );
+  }
+
   const items = navItemsForRole(user?.role);
 
   return (

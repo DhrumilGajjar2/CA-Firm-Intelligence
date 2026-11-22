@@ -1,4 +1,7 @@
+import { Suspense } from "react";
 import { Building2 } from "lucide-react";
+import { AuthCardSkeleton } from "@/features/auth/auth-states";
+import { RedirectIfAuthenticated } from "@/features/auth/redirect-if-authenticated";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,7 +12,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </span>
         <span className="text-lg font-semibold">CA Firm Intelligence</span>
       </div>
-      <div className="w-full max-w-sm">{children}</div>
+      <div className="w-full max-w-sm">
+        {/* useSearchParams (?next=, ?token=) in the auth client components needs a Suspense boundary. */}
+        <Suspense fallback={<AuthCardSkeleton />}>
+          <RedirectIfAuthenticated>{children}</RedirectIfAuthenticated>
+        </Suspense>
+      </div>
     </div>
   );
 }

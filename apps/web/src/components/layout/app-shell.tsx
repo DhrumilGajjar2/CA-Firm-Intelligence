@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Menu } from "lucide-react";
+import { Info, Menu } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ApiStatus } from "./api-status";
@@ -52,13 +53,23 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Sheet>
 
           <div className="text-muted-foreground min-w-0 flex-1 truncate text-sm">
-            {user?.firm.name ?? "Your firm"}
+            {user?.firm.name}
           </div>
           <ApiStatus />
           <UserMenu />
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          {user && user.role !== "owner" && !user.firm.onboarding_completed ? (
+            <Alert role="status" className="mb-4">
+              <Info aria-hidden />
+              <AlertDescription>
+                Your firm&apos;s setup is not finished yet. The owner will complete it.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {children}
+        </main>
       </div>
     </div>
   );
