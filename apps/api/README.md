@@ -12,7 +12,7 @@ Owner: **Dhrumil** (backend role). Folder layout follows PRD section 7 and is a 
 | `src/utils/`                      | `AppError`, response envelope helpers and schemas                                                      |
 | `src/modules/<module>/`           | Feature modules: add `*.routes.ts` and register in `app.ts`                                            |
 | `prisma/`                         | `schema.prisma`, migrations, `seed.ts`                                                                 |
-| `tests/`                          | Vitest + Fastify `inject` (no real database needed)                                                    |
+| `tests/`                          | Vitest + Fastify `inject`; DB-backed suites use `TEST_DATABASE_URL` (see `docs/DEPLOYMENT.md`)         |
 
 ## Writing a protected, tenant-safe route
 
@@ -20,7 +20,8 @@ Owner: **Dhrumil** (backend role). Folder layout follows PRD section 7 and is a 
 app.withTypeProvider<ZodTypeProvider>().get(
   "/clients",
   {
-    preHandler: [app.authenticate, requireRole("owner", "manager")],
+    // onRequest runs before body parsing: the order is always 401, 403, then 400/415.
+    onRequest: [app.authenticate, requireRole("owner", "manager")],
     schema: {
       tags: ["Clients"],
       response: { 200: successResponseSchema(z.array(clientSchema)) },

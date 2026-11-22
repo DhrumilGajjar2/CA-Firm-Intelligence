@@ -6,7 +6,10 @@ import { AppError } from "../utils/app-error.js";
  * Role-based access control (PRD §3). The backend enforces this independently of the frontend.
  *
  * Usage:
- *   app.get("/users", { preHandler: [app.authenticate, requireRole("owner", "manager")] }, handler)
+ *   app.get("/users", { onRequest: [app.authenticate, requireRole("owner", "manager")] }, handler)
+ *
+ * Use the `onRequest` hook (not preValidation/preHandler): it runs before the body is parsed, so the order of
+ * outcomes is always 401, then 403, then 400/415 (an anonymous caller never learns how a body is parsed).
  */
 export function requireRole(...allowed: UserRole[]) {
   return async (request: FastifyRequest) => {
