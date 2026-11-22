@@ -17,6 +17,7 @@
     "typecheck:api": "npm run typecheck --workspace @ca-firm/api",
     "typecheck": "npm run typecheck:web && npm run typecheck:api",
     "test:api": "npm run test --workspace @ca-firm/api",
+    "test:web": "npm run test --workspace @ca-firm/web",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "npm run prisma:migrate:dev --workspace @ca-firm/api",

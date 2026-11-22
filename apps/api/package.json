@@ -19,12 +19,15 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@ca-firm/shared-types": "^0.1.0",
+    "@ca-firm/validation": "^0.1.0",
     "@fastify/cookie": "^11.1.5",
     "@fastify/cors": "^11.4.3",
     "@fastify/helmet": "^13.2.0",
     "@fastify/jwt": "^10.2.8",
     "@fastify/swagger": "^9.9.5",
     "@fastify/swagger-ui": "^6.1.5",
+    "@node-rs/argon2": "^2.2.2",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "dotenv": "^18.0.10",
